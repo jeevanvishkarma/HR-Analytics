@@ -1,0 +1,157 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+data= pd.read_csv("hr_train.csv")
+test = pd.read_csv('hr_test.csv')
+testing = pd.read_csv('hr_test.csv')
+data.isnull()
+
+data['previous_year_rating'] = data['previous_year_rating'].fillna(value = 0)
+
+data.isnull().sum()
+
+
+pd.crosstab(data['is_promoted'],data['education']).plot(kind='bar')
+
+data['education'].value_counts().plot(kind='bar')
+
+data['education'] = data['education'].fillna(value = 'Below Secondary')
+
+pd.crosstab(data['is_promoted'],data['education']).plot(kind='bar')
+
+train = data.drop(['employee_id','region'], axis = 1)
+
+sns.pairplot(train)
+
+X = pd.get_dummies(train)
+
+pd.crosstab(train['region'], train['is_promoted']).plot(kind='bar')
+
+pd.crosstab(train['department'], train['is_promoted']).plot(kind='bar')
+
+X = X.drop(['gender_m','education_Below Secondary','recruitment_channel_referred', ], axis = 1)
+X = X.drop(['is_promoted'], axis = 1)
+Y = train['is_promoted']
+
+from sklearn.preprocessing import StandardScaler
+
+scale = StandardScaler()
+
+x_scale = scale.fit_transform(X)
+
+from sklearn.model_selection import train_test_split
+x_train,x_test,y_train,y_test = train_test_split(x_scale, Y, test_size= .2, random_state= 7)
+
+#Naive Bayes
+from sklearn.naive_bayes import GaussianNB
+
+NB = GaussianNB()
+ 
+NB.fit(x_train,y_train)
+NB.score(x_test,y_test)
+
+
+# Random Forest
+from sklearn.ensemble import RandomForestClassifier
+
+forest = RandomForestClassifier()
+
+forest.fit(x_train,y_train)
+forest.score(x_test,y_test)
+
+#Logistic Regression
+from sklearn.linear_model import LogisticRegression
+
+logic = LogisticRegression()
+logic.fit(x_train,y_train)
+logic.score(x_test,y_test)
+
+#Nearest naebours
+from sklearn.neighbors import KNeighborsClassifier
+
+
+neighbour = KNeighborsClassifier()
+neighbour.fit(x_train,y_train)
+neighbour.score(x_test,y_test)
+
+#SVM
+from sklearn.svm import SVC
+
+support = SVC()
+support.fit(x_train,y_train)
+print(support.score(x_test,y_test))
+""" 93.80"""
+
+
+#Neural Network
+import keras
+from keras.models import Sequential
+from keras.layers import Dense
+
+clf= Sequential()
+
+clf.add(Dense(11, init='uniform', activation = 'relu', input_dim = 21))
+
+
+clf.add(Dense(11, init = 'uniform', activation = 'relu'))
+
+clf.add(Dense(1, init = 'uniform', activation = 'sigmoid'))
+
+clf.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+
+
+ANN = clf.fit(x_train, y_train,
+                         validation_data = (x_test, y_test), batch_size = 30, epochs = 75)
+
+yp = clf.predict(x_test)
+yp = (yp  > 0.5)
+yp = yp.astype(int)
+
+# Now Using the actual training and testing data
+
+
+
+
+
+df = data.drop(['is_promoted'], axis = 1)
+training = pd.concat([df,test])
+
+test  = test.drop(['employee_id','region'], axis = 1)
+
+Y_test = pd.get_dummies(test)
+
+Y_test = Y_test.drop(['gender_m','education_Below Secondary'
+                    ,'recruitment_channel_referred' ], axis = 1)
+
+y_scale = scale.fit_transform(Y_test)
+
+
+import keras
+from keras.models import Sequential
+from keras.layers import Dense
+
+clf= Sequential()
+
+clf.add(Dense(11, init='uniform', activation = 'relu', input_dim = 21))
+
+
+clf.add(Dense(11, init = 'uniform', activation = 'relu'))
+
+clf.add(Dense(1, init = 'uniform', activation = 'sigmoid'))
+
+clf.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+
+network = clf.fit(x_scale,Y,  batch_size = 15, epochs = 80)
+
+
+prediction = clf.predict(y_scale)
+prediction = (prediction > 0.5)
+prediction = prediction.astype(int)
+prediction = pd.DataFrame(prediction)
+prediction['employee_id'] = testing['employee_id']
+prediction['is_promoted'] = prediction.iloc[ : , 0]
+prediction = prediction.drop(0, axis =  1)
+prediction.to_csv('HR_Prediction.csv')
+
